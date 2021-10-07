@@ -8,7 +8,7 @@ from fastapi import FastAPI
 app = FastAPI()
 
 watch_folder = "/mnt/t2ries/DECODE"
-
+decode_default = "/home/riesgroup/xconda3/envs/decode_v010/bin/python"
 
 @app.get("/status")
 async def status() -> Dict[str, str]:
@@ -31,7 +31,7 @@ async def envs() -> List[str]:
 
 @app.post("/submit")
 async def submit(path: str) -> int:
-    p = subprocess.Popen(["/home/riesgroup/xconda3/envs/decode_v010/bin/python", "--help"])
+    p = subprocess.Popen([decode_default, "-m", "decode.neuralfitter.train.live_engine", "-p", f"{watch_folder}/{path}"])
     pid = p.pid
     return pid
 

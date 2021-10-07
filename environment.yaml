@@ -8,8 +8,10 @@ channels:
 dependencies:
   - python=3.9
   - pytorch=1.9
+  - numpy
   - cudatoolkit
   - psutil
+  - pynvml
 
   - pip
   - pip:
