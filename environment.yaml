@@ -1,0 +1,16 @@
+name: dispatcher
+
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+
+dependencies:
+  - python=3.9
+  - pytorch=1.9
+#  - cudatoolkit
+
+  - pip
+  - pip:
+      - fastapi[all]
+      - uvicorn[standard]
