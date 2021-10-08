@@ -17,3 +17,4 @@ dependencies:
   - pip:
       - fastapi[all]
       - uvicorn[standard]
+      - gputil
