@@ -12,9 +12,9 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-decode_default = "/home/riesgroup/xconda3/envs/decode_v010/bin/python"
+decode_default = "/home/riesgroup/xconda3/envs/decode_dev/bin/python"
 
-watch_dir = Path("/mnt/t2ries/decode/experiments")
+watch_dir = Path("/mnt/t2ries/decode")
 log_dir = Path("/mnt/t2ries/decode/log")
 working_dir = "/home/riesgroup/git/decode"
 
@@ -27,6 +27,7 @@ async def status() -> Dict[str, str]:
         "health": "Dispatcher alive.",
         "watch_dir": str(watch_dir),
         "log_dir": str(log_dir),
+        "default_python_env": decode_default,
     }
 
 
@@ -64,11 +65,9 @@ async def submit_training(path_param: Path) -> int:
         "-p", f"{str(watch_dir)}/{str(path_param)}",
         "-l", f"{str(log_dir)}",
         ], cwd=working_dir)
+
     pid = p.pid
-
-    # bookkeeping
     pid_pool.add(pid)
-
     return pid
 
 
@@ -86,14 +85,16 @@ async def submit_fit(fit: Fit) -> int:
     p = subprocess.Popen([
         decode_default,
         "-m", "decode.neuralfitter.inference.inference",
-        "--frame_path", f"{watch_folder}/{fit.frame_path}",
-        "--frame_meta_path", f"{watch_folder}/{fit.frame_meta_path}",
-        "--model_path", f"{watch_folder}/{fit.model_path}",
-        "--param_path", f"{watch_folder}/{fit.param_path}",
-        "--emitter_path", f"{watch_folder}/{fit.emitter_path}",
+        "--frame_path", f"{watch_dir}/{fit.frame_path}",
+        "--frame_meta_path", f"{watch_dir}/{fit.frame_meta_path}",
+        "--model_path", f"{watch_dir}/{fit.model_path}",
+        "--param_path", f"{watch_dir}/{fit.param_path}",
+        "--emitter_path", f"{watch_dir}/{fit.emitter_path}",
         "--device", f"{fit.device}",
-    ], cwd=working_folder)
+    ], cwd=working_dir)
+
     pid = p.pid
+    pid_pool.add(pid)
     return pid
 
 
