@@ -56,7 +56,7 @@ async def envs() -> List[str]:
     return decode_envs
 
 
-@app.post("/submit_training")
+@app.post("/submit_training", tags=["submit"])
 async def submit_training(path_param: Path) -> int:
 
     p = subprocess.Popen([
@@ -70,27 +70,12 @@ async def submit_training(path_param: Path) -> int:
     pid_pool.add(pid)
     return pid
 
-
-class Fit(BaseModel):
-    frame_path: str
-    frame_meta_path: str
-    model_path: str
-    param_path: str
-    emitter_path: str
-    device: str
-
-
-@app.post("/submit_fit")
-async def submit_fit(fit: Fit) -> int:
+@app.post("/submit_fit", tags=["submit"])
+async def submit_fit(path_fit_meta: Path) -> int:
     p = subprocess.Popen([
         decode_default,
         "-m", "decode.neuralfitter.inference.inference",
-        "--frame_path", f"{watch_dir}/{fit.frame_path}",
-        "--frame_meta_path", f"{watch_dir}/{fit.frame_meta_path}",
-        "--model_path", f"{watch_dir}/{fit.model_path}",
-        "--param_path", f"{watch_dir}/{fit.param_path}",
-        "--emitter_path", f"{watch_dir}/{fit.emitter_path}",
-        "--device", f"{fit.device}",
+        "--fit_meta_path", f"{watch_dir}/{path_fit_meta}",
     ], cwd=working_dir)
 
     pid = p.pid
