@@ -16,7 +16,7 @@ decode_default = "/home/riesgroup/xconda3/envs/decode_dev/bin/python"
 
 watch_dir = Path("/mnt/t2ries/decode")
 log_dir = Path("/mnt/t2ries/decode/log")
-working_dir = "/home/riesgroup/git/decode"
+git_dir = Path("/home/riesgroup/git/decode")
 
 pid_pool = set()
 
@@ -56,6 +56,9 @@ async def envs() -> List[str]:
     return decode_envs
 
 
+env_vars = os.environ.copy()
+env_vars["PYTHONPATH"] = str(git_dir)
+
 @app.post("/submit_training", tags=["submit"])
 async def submit_training(path_param: Path) -> int:
 
@@ -64,7 +67,7 @@ async def submit_training(path_param: Path) -> int:
         "-m", "decode.neuralfitter.train.live_engine",
         "-p", f"{str(watch_dir)}/{str(path_param)}",
         "-l", f"{str(log_dir)}",
-        ], cwd=working_dir)
+        ], cwd=watch_dir, env=env_vars)
 
     pid = p.pid
     pid_pool.add(pid)
@@ -76,7 +79,7 @@ async def submit_fit(path_fit_meta: Path) -> int:
         decode_default,
         "-m", "decode.neuralfitter.inference.inference",
         "--fit_meta_path", f"{watch_dir}/{path_fit_meta}",
-    ], cwd=working_dir)
+    ], cwd=watch_dir, env=env_vars)
 
     pid = p.pid
     pid_pool.add(pid)
