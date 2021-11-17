@@ -1,13 +1,13 @@
 import subprocess
 import psutil
 import os
+from itertools import chain
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
 import GPUtil
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -18,10 +18,10 @@ watch_dir = Path("/mnt/t2ries/decode")
 log_dir = Path("/mnt/t2ries/decode/log")
 git_dir = Path("/home/riesgroup/git/decode")
 
-pid_pool = set()
+pid_pool = {"training": set(), "fit": set()}
 
 
-@app.get("/status")
+@app.get("/status", tags=["status"])
 async def status() -> Dict[str, str]:
     return {
         "health": "Dispatcher alive.",
@@ -31,7 +31,7 @@ async def status() -> Dict[str, str]:
     }
 
 
-@app.get("/status_gpus")
+@app.get("/status_gpus", tags=["status"])
 async def status_gpu() -> Dict[str, str]:
     n = torch.cuda.device_count()
 
@@ -70,7 +70,7 @@ async def submit_training(path_param: Path) -> int:
         ], cwd=watch_dir, env=env_vars)
 
     pid = p.pid
-    pid_pool.add(pid)
+    pid_pool["training"].add(pid)
     return pid
 
 @app.post("/submit_fit", tags=["submit"])
@@ -82,14 +82,29 @@ async def submit_fit(path_fit_meta: Path) -> int:
     ], cwd=watch_dir, env=env_vars)
 
     pid = p.pid
-    pid_pool.add(pid)
+    pid_pool["fit"].add(pid)
     return pid
+
+
+@app.get("/status_processes", tags=["status"])
+async def status_proc() -> Dict[str, Dict[int, str]]:
+    pid_stat_all = {p.info['pid']: p.info['status'] for p in psutil.process_iter(['pid', 'status'])}
+
+    pid_stat = dict.fromkeys(pid_pool.keys())
+
+    for p_type in pid_stat:
+        pid_stat[p_type] = dict.fromkeys(pid_pool[p_type])
+
+        for p in pid_stat[p_type]:
+            pid_stat[p_type][p] = pid_stat_all[p]
+
+    return pid_stat
 
 
 @app.post("/kill")
 async def kill(pid: int):
-    if not pid in pid_pool:
-        raise HTTPException(status_code=400, detail="Can not kill process that is not a training.")
+    if not pid in list(chain(pid_pool.values())):
+        raise HTTPException(status_code=400, detail="Can not kill process that is not a training or fit.")
 
     p = psutil.Process(pid)
     p.terminate()
