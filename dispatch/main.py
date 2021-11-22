@@ -61,13 +61,15 @@ env_vars["PYTHONPATH"] = str(git_dir)
 
 @app.post("/submit_training", tags=["submit"])
 async def submit_training(path_param: Path) -> int:
+    log_file = watch_dir / path_fit_meta.parent / "out.log"
+    f = open(log_file, "w+")
 
     p = subprocess.Popen([
         decode_default,
         "-m", "decode.neuralfitter.train.live_engine",
         "-p", f"{str(watch_dir)}/{str(path_param)}",
         "-l", f"{str(log_dir)}",
-        ], cwd=watch_dir, env=env_vars)
+        ], cwd=watch_dir, env=env_vars, stdout=f, stderr=f, close_fds=True)
 
     pid = p.pid
     pid_pool["training"].add(pid)
@@ -75,11 +77,14 @@ async def submit_training(path_param: Path) -> int:
 
 @app.post("/submit_fit", tags=["submit"])
 async def submit_fit(path_fit_meta: Path) -> int:
+    log_file = watch_dir / path_fit_meta.parent / "out.log"
+    f = open(log_file, "w+")
+
     p = subprocess.Popen([
         decode_default,
         "-m", "decode.neuralfitter.inference.inference",
         "--fit_meta_path", f"{watch_dir}/{path_fit_meta}",
-    ], cwd=watch_dir, env=env_vars)
+    ], cwd=watch_dir, env=env_vars, stdout=f, stderr=f, close_fds=True)
 
     pid = p.pid
     pid_pool["fit"].add(pid)
