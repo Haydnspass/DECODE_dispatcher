@@ -61,7 +61,7 @@ env_vars["PYTHONPATH"] = str(git_dir)
 
 @app.post("/submit_training", tags=["submit"])
 async def submit_training(path_param: Path) -> int:
-    log_file = watch_dir / path_fit_meta.parent / "out.log"
+    log_file = watch_dir / path_param.parent / "out.log"
     f = open(log_file, "w+")
 
     p = subprocess.Popen([
@@ -101,7 +101,10 @@ async def status_proc() -> Dict[str, Dict[int, str]]:
         pid_stat[p_type] = dict.fromkeys(pid_pool[p_type])
 
         for p in pid_stat[p_type]:
-            pid_stat[p_type][p] = pid_stat_all[p]
+            if p in pid_stat_all:
+                pid_stat[p_type][p] = pid_stat_all[p]
+            else:
+                pid_stat[p_type][p] = "not found"
 
     return pid_stat
 
