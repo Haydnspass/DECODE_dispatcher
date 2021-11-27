@@ -20,6 +20,9 @@ git_dir = Path("/home/riesgroup/git/decode")
 
 pid_pool = {"training": set(), "fit": set()}
 
+def free_gpus() -> list:
+    return GPUtil.getAvailable(order='memory', limit=1000, maxLoad=0.4, maxMemory=0.3, includeNan=False)
+
 
 @app.get("/status", tags=["status"])
 async def status() -> Dict[str, str]:
@@ -45,9 +48,14 @@ async def status_gpu() -> Dict[str, str]:
                 "memory_total": GPUtil.getGPUs()[ix].memoryTotal,
                 "load": GPUtil.getGPUs()[ix].load,
                 "temperature": GPUtil.getGPUs()[ix].temperature,
+                "free": ix in free_gpus()
             }
         })
     return out
+
+@app.get("/best_gpu", tags=["status"])
+async def best_gpu() -> int:
+    return free_gpus()[0]
 
 
 @app.get("/envs")
@@ -82,7 +90,7 @@ async def submit_fit(path_fit_meta: Path) -> int:
 
     p = subprocess.Popen([
         decode_default,
-        "-m", "decode.neuralfitter.inference.inference",
+        "-m", "decode.neuralfitter.inference.infer",
         "--fit_meta_path", f"{watch_dir}/{path_fit_meta}",
     ], cwd=watch_dir, env=env_vars, stdout=f, stderr=f, close_fds=True)
 
